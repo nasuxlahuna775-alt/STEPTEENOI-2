@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกค่าปรับแก๊ง - STEPTEENOI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Kanit) -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Choices.js -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { kanit: ['Kanit', 'sans-serif'] },
+                    colors: {
+                        darkBg: '#0b0f19',
+                        cardBg: '#131c31',
+                        cardHover: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .choices__inner {
+            background-color: rgba(15, 23, 42, 0.7) !important;
+            border: 1px solid rgba(51, 65, 85, 0.8) !important;
+            border-radius: 1rem !important;
+            color: #f8fafc !important;
+            min-height: 48px !important;
+            padding: 6px 14px !important;
+            font-family: 'Kanit', sans-serif !important;
+            font-size: 0.9rem !important;
+        }
+        .choices__list--dropdown {
+            background-color: #131c31 !important;
+            border: 1px solid rgba(51, 65, 85, 0.8) !important;
+            border-radius: 1rem !important;
+            font-family: 'Kanit', sans-serif !important;
+            color: #f8fafc !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .choices__item--choice { font-size: 0.9rem !important; }
+        .choices__item--choice.is-highlighted { background-color: #ec4899 !important; color: #fff !important; }
+        .choices__input { background-color: transparent !important; color: #f8fafc !important; font-family: 'Kanit', sans-serif !important; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="font-kanit bg-darkBg text-slate-100 min-h-screen flex flex-col items-center py-10 px-4 selection:bg-pink-500 selection:text-white">
+
+    <!-- Header & Admin Toggle Button -->
+    <div class="w-full max-w-5xl flex justify-between items-center mb-10 px-2">
+        <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
+                <i class="fa-solid fa-shield-halved text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold tracking-wide bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-400 bg-clip-text text-transparent">
+                    STEPTEENOI FINES
+                </h1>
+                <p class="text-slate-400 text-xs">ระบบจัดการและบันทึกค่าปรับแก๊งแบบ Realtime</p>
+            </div>
+        </div>
+        <div class="flex space-x-3">
+            <button id="manageDataBtn" onclick="openDataModal()" class="hidden px-4 py-2.5 rounded-2xl bg-purple-600/20 border border-purple-500/50 text-purple-300 hover:bg-purple-600 hover:text-white text-xs md:text-sm font-medium transition-all duration-300 flex items-center shadow-lg backdrop-blur-md">
+                <i class="fa-solid fa-gear mr-2"></i>จัดการข้อมูล
+            </button>
+            <button id="adminToggleBtn" onclick="openAdminModal()" 
+                class="px-4 py-2.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 text-slate-300 hover:text-white hover:border-pink-500 text-xs md:text-sm font-medium transition-all duration-300 flex items-center shadow-lg backdrop-blur-md">
+                <i id="adminIcon" class="fa-solid fa-lock mr-2 text-pink-400"></i><span id="adminBtnText">โหมดแอดมิน</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Grid Container -->
+    <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- ฟอร์มบันทึกค่าปรับ (5 คอลัมน์) -->
+        <div class="lg:col-span-5 bg-cardBg/90 backdrop-blur-2xl border border-slate-700/60 rounded-3xl p-6 md:p-8 shadow-2xl shadow-purple-950/20 h-fit relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <h2 class="text-lg font-semibold text-slate-100 mb-6 flex items-center">
+                <span class="w-8 h-8 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center text-pink-400 mr-3 text-sm">
+                    <i class="fa-solid fa-pen-nib"></i>
+                </span>
+                บันทึกค่าปรับใหม่
+            </h2>
+            
+            <form id="fineForm" class="space-y-5">
+                <!-- เลือกบ้าน -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-2.5 flex items-center">
+                        <i class="fa-solid fa-house text-pink-400 mr-1.5"></i> เลือกบ้านที่กระทำผิด
+                    </label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="house" value="บ้านที่ 1" class="peer sr-only" required onchange="updateMemberDropdown()">
+                            <div class="text-center py-3 rounded-2xl bg-slate-900/60 border border-slate-700/80 peer-checked:border-pink-500 peer-checked:bg-gradient-to-r peer-checked:from-pink-500/20 peer-checked:to-purple-500/20 peer-checked:text-pink-300 text-xs font-semibold transition-all shadow-sm">บ้าน 1</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="house" value="บ้านที่ 2" class="peer sr-only" onchange="updateMemberDropdown()">
+                            <div class="text-center py-3 rounded-2xl bg-slate-900/60 border border-slate-700/80 peer-checked:border-pink-500 peer-checked:bg-gradient-to-r peer-checked:from-pink-500/20 peer-checked:to-purple-500/20 peer-checked:text-pink-300 text-xs font-semibold transition-all shadow-sm">บ้าน 2</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="house" value="บ้านที่ 3" class="peer sr-only" onchange="updateMemberDropdown()">
+                            <div class="text-center py-3 rounded-2xl bg-slate-900/60 border border-slate-700/80 peer-checked:border-pink-500 peer-checked:bg-gradient-to-r peer-checked:from-pink-500/20 peer-checked:to-purple-500/20 peer-checked:text-pink-300 text-xs font-semibold transition-all shadow-sm">บ้าน 3</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="house" value="บ้านที่ 4" class="peer sr-only" onchange="updateMemberDropdown()">
+                            <div class="text-center py-3 rounded-2xl bg-slate-900/60 border border-slate-700/80 peer-checked:border-pink-500 peer-checked:bg-gradient-to-r peer-checked:from-pink-500/20 peer-checked:to-purple-500/20 peer-checked:text-pink-300 text-xs font-semibold transition-all shadow-sm">บ้าน 4</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- เลือกชื่อสมาชิก -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
+                        <i class="fa-solid fa-user text-purple-400 mr-1.5"></i> เลือกชื่อสมาชิก
+                    </label>
+                    <select id="characterSelect" required class="w-full">
+                        <option value="" disabled selected></option>
+                    </select>
+                </div>
+
+                <!-- เหตุผล / ข้อหา -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
+                        <i class="fa-solid fa-clipboard-question text-indigo-400 mr-1.5"></i> เหตุผล / ข้อหา
+                    </label>
+                    <select id="reasonSelect" class="w-full mb-2.5">
+                        <option value="" disabled selected></option>
+                    </select>
+                    <input type="text" id="customReasonInput" placeholder="หรือพิมพ์ระบุข้อหาเองที่นี่..." 
+                        class="w-full bg-slate-900/70 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition-all shadow-inner">
+                </div>
+
+                <!-- จำนวนเงิน -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5 flex items-center">
+                        <i class="fa-solid fa-coins text-amber-400 mr-1.5"></i> จำนวนเงินค่าปรับ ($)
+                    </label>
+                    <input type="number" id="amount" placeholder="0" min="0" required
+                        class="w-full bg-slate-900/70 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all font-semibold shadow-inner">
+                </div>
+
+                <!-- สถานะตอนบันทึก -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-2">สถานะการจ่ายเงิน</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="status" value="ยังไม่จ่าย" class="peer sr-only" checked>
+                            <div class="text-center py-2.5 rounded-2xl bg-slate-900/60 border border-slate-700/80 peer-checked:border-red-500 peer-checked:bg-red-500/15 peer-checked:text-red-400 text-xs font-semibold transition-all shadow-sm">ยังไม่จ่าย</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="status" value="จ่ายแล้ว" class="peer sr-only">
+                            <div class="text-center py-2.5 rounded-2xl bg-slate-900/60 border border-slate-700/80 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/15 peer-checked:text-emerald-400 text-xs font-semibold transition-all shadow-sm">จ่ายแล้ว</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ปุ่มส่ง -->
+                <button type="submit" id="submitBtn"
+                    class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 font-semibold text-sm text-white shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-[1.01] active:scale-[0.98] transition-all duration-300">
+                    <i class="fa-solid fa-paper-plane mr-2"></i>บันทึกค่าปรับ
+                </button>
+            </form>
+        </div>
+
+        <!-- รายการประวัติและสรุปยอด (7 คอลัมน์) -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- สรุปยอดรวมแต่ละบ้าน -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-cardBg/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-4 text-center shadow-lg hover:border-pink-500/50 transition-all group">
+                    <span class="text-xs text-slate-400 group-hover:text-pink-400 transition-colors">บ้านที่ 1</span>
+                    <h3 id="totalHouse1" class="text-lg font-bold text-pink-400 mt-1">$0</h3>
+                </div>
+                <div class="bg-cardBg/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-4 text-center shadow-lg hover:border-pink-500/50 transition-all group">
+                    <span class="text-xs text-slate-400 group-hover:text-pink-400 transition-colors">บ้านที่ 2</span>
+                    <h3 id="totalHouse2" class="text-lg font-bold text-pink-400 mt-1">$0</h3>
+                </div>
+                <div class="bg-cardBg/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-4 text-center shadow-lg hover:border-pink-500/50 transition-all group">
+                    <span class="text-xs text-slate-400 group-hover:text-pink-400 transition-colors">บ้านที่ 3</span>
+                    <h3 id="totalHouse3" class="text-lg font-bold text-pink-400 mt-1">$0</h3>
+                </div>
+                <div class="bg-cardBg/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-4 text-center shadow-lg hover:border-pink-500/50 transition-all group">
+                    <span class="text-xs text-slate-400 group-hover:text-pink-400 transition-colors">บ้านที่ 4</span>
+                    <h3 id="totalHouse4" class="text-lg font-bold text-pink-400 mt-1">$0</h3>
+                </div>
+            </div>
+
+            <!-- ประวัติการปรับ Realtime -->
+            <div class="bg-cardBg/90 backdrop-blur-2xl border border-slate-700/60 rounded-3xl p-6 md:p-8 shadow-2xl shadow-purple-950/20">
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+                    <h2 class="text-base font-semibold text-slate-200 flex items-center">
+                        <i class="fa-solid fa-clock-rotate-left mr-2.5 text-purple-400"></i>ประวัติการปรับทั้งหมด
+                    </h2>
+                    <span id="loadingStatus" class="text-xs px-3 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-400 font-normal">กำลังเชื่อมต่อฐานข้อมูล...</span>
+                </div>
+                
+                <div id="historyList" class="space-y-3.5 max-h-[460px] overflow-y-auto pr-1">
+                    <div class="text-center py-12 text-slate-500 text-sm">ยังไม่มีข้อมูลค่าปรับในระบบ</div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Modal จัดการข้อมูล -->
+    <div id="dataModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-slate-700/80 rounded-3xl p-6 md:p-8 w-full max-w-xl shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-700/60 pb-4">
+                <h3 class="text-lg font-bold text-slate-100 flex items-center">
+                    <i class="fa-solid fa-gear text-purple-400 mr-2.5"></i>จัดการข้อมูลระบบ (สมาชิก & ข้อหา)
+                </h3>
+                <button onclick="closeDataModal()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <h4 class="text-xs font-semibold uppercase tracking-wider text-pink-400"><i class="fa-solid fa-users mr-1.5"></i> เพิ่ม / ลบ สมาชิกแยกตามบ้าน</h4>
+                <form id="addMemberForm" onsubmit="addNewMember(event)" class="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">เลือกบ้าน</label>
+                            <select id="targetHouse" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500">
+                                <option value="บ้านที่ 1">บ้านที่ 1</option>
+                                <option value="บ้านที่ 2">บ้านที่ 2</option>
+                                <option value="บ้านที่ 3">บ้านที่ 3</option>
+                                <option value="บ้านที่ 4">บ้านที่ 4</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">ชื่อตัวละคร / Discord ID</label>
+                            <input type="text" id="newMemberName" placeholder="ระบุชื่อ..." required
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow transition-all">
+                        <i class="fa-solid fa-user-plus mr-1.5"></i>เพิ่มสมาชิกเข้าบ้าน
+                    </button>
+                </form>
+                <div id="memberManagementList" class="space-y-2 max-h-[150px] overflow-y-auto pr-1"></div>
+            </div>
+
+            <div class="space-y-4 pt-4 border-t border-slate-700/60">
+                <h4 class="text-xs font-semibold uppercase tracking-wider text-pink-400"><i class="fa-solid fa-clipboard-list mr-1.5"></i> เพิ่ม / ลบ หัวข้อข้อหาความผิด</h4>
+                <form id="addReasonForm" onsubmit="addNewReason(event)" class="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">ชื่อหัวข้อข้อหา / เหตุผล</label>
+                        <input type="text" id="newReasonText" placeholder="เช่น มาสาย, ขัดคำสั่งหัวหน้า, ทำรถพัง..." required
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-purple-500">
+                    </div>
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-semibold shadow transition-all">
+                        <i class="fa-solid fa-plus mr-1.5"></i>เพิ่มหัวข้อข้อหา
+                    </button>
+                </form>
+                <div id="reasonManagementList" class="space-y-2 max-h-[150px] overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Admin -->
+    <div id="adminModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-slate-700/85 rounded-3xl p-6 md:p-8 w-full max-w-sm shadow-2xl space-y-5">
+            <div class="text-center">
+                <div class="inline-block p-3.5 rounded-2xl bg-pink-500/10 border border-pink-500/20 text-pink-400 mb-3 shadow-inner">
+                    <i class="fa-solid fa-shield-halved text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-100">ยืนยันตัวตนผู้ดูแลระบบ</h3>
+                <p class="text-xs text-slate-400 mt-1">กรุณากรอกรหัสผ่านเพื่อเปิดโหมดแอดมิน</p>
+            </div>
+            <form id="adminLoginForm" onsubmit="verifyAdmin(event)" class="space-y-4">
+                <input type="password" id="adminPasswordInput" placeholder="รหัสผ่านแอดมิน..." required autofocus
+                    class="w-full bg-slate-900/90 border border-slate-700 rounded-2xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-pink-500 shadow-inner">
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeAdminModal()"
+                        class="w-1/2 py-3 rounded-2xl bg-slate-800 text-slate-300 text-sm font-medium hover:bg-slate-700 transition-all">ยกเลิก</button>
+                    <button type="submit"
+                        class="w-1/2 py-3 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-medium shadow-md hover:opacity-90 transition-all">ยืนยัน</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, remove, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwKXYJji4qQNoOvhcqpdBWHdpPLQ4sXJ0",
+            authDomain: "tarsaray1.firebaseapp.com",
+            databaseURL: "https://tarsaray1-default-rtdb.firebaseio.com",
+            projectId: "tarsaray1",
+            storageBucket: "tarsaray1.firebasestorage.app",
+            messagingSenderId: "782765725846",
+            appId: "1:782765725846:web:d645224c9942a0075acab7",
+            measurementId: "G-WF8T4DSX5D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const analytics = getAnalytics(app);
+
+        const charElement = document.getElementById('characterSelect');
+        const charChoices = new Choices(charElement, { searchEnabled: true, itemSelectText: '', shouldSort: false, placeholder: true, placeholderValue: '' });
+
+        const reasonElement = document.getElementById('reasonSelect');
+        const reasonChoices = new Choices(reasonElement, { searchEnabled: true, itemSelectText: '', shouldSort: false, placeholder: true, placeholderValue: '' });
+
+        const form = document.getElementById('fineForm');
+        const historyList = document.getElementById('historyList');
+        const loadingStatus = document.getElementById('loadingStatus');
+
+        let isAdmin = false;
+        let globalMembersData = {};
+        let globalReasonsData = {};
+        let latestSnapshot = null;
+
+        window.updateMemberDropdown = function() {
+            const selectedHouse = document.querySelector('input[name="house"]:checked');
+            charChoices.clearChoices();
+            
+            if (!selectedHouse) return;
+
+            const houseName = selectedHouse.value;
+            const membersOfHouse = globalMembersData[houseName] || {};
+            
+            let choiceItems = [];
+            Object.keys(membersOfHouse).forEach(memberId => {
+                choiceItems.push({ value: membersOfHouse[memberId].name, label: membersOfHouse[memberId].name, selected: false });
+            });
+
+            charChoices.setChoices(choiceItems, 'value', 'label', true);
+        }
+
+        function updateReasonDropdown() {
+            reasonChoices.clearChoices();
+            let choiceItems = [];
+            Object.keys(globalReasonsData).forEach(reasonId => {
+                choiceItems.push({ value: globalReasonsData[reasonId].text, label: globalReasonsData[reasonId].text, selected: false });
+            });
+            reasonChoices.setChoices(choiceItems, 'value', 'label', true);
+        }
+
+        window.openAdminModal = function() {
+            if (isAdmin) {
+                isAdmin = false;
+                document.getElementById('adminIcon').className = "fa-solid fa-lock mr-2 text-pink-400";
+                document.getElementById('adminBtnText').textContent = "โหมดแอดมิน";
+                document.getElementById('manageDataBtn').classList.add('hidden');
+                document.getElementById('adminToggleBtn').classList.remove('border-pink-500', 'bg-pink-500/10');
+                triggerRealtimeLoad();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'ออกจากโหมดแอดมินแล้ว', showConfirmButton: false, timer: 2000, background: '#131c31', color: '#f8fafc' });
+                return;
+            }
+            document.getElementById('adminModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('adminPasswordInput').focus(), 100);
+        }
+
+        window.closeAdminModal = function() {
+            document.getElementById('adminModal').classList.add('hidden');
+            document.getElementById('adminPasswordInput').value = '';
+        }
+
+        window.verifyAdmin = function(e) {
+            e.preventDefault();
+            const pass = document.getElementById('adminPasswordInput').value;
+            
+            if (pass === "admin1234") {
+                isAdmin = true;
+                closeAdminModal();
+                document.getElementById('adminIcon').className = "fa-solid fa-lock-open mr-2 text-emerald-400";
+                document.getElementById('adminBtnText').textContent = "ปิดโหมดแอดมิน";
+                document.getElementById('manageDataBtn').classList.remove('hidden');
+                document.getElementById('adminToggleBtn').classList.add('border-pink-500', 'bg-pink-500/10');
+                triggerRealtimeLoad();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เข้าสู่โหมดแอดมินสำเร็จ!', showConfirmButton: false, timer: 2000, background: '#131c31', color: '#f8fafc' });
+            } else {
+                Swal.fire({ icon: 'error', title: 'รหัสผ่านไม่ถูกต้อง!', confirmButtonColor: '#ec4899', background: '#131c31', color: '#f8fafc' });
+                document.getElementById('adminPasswordInput').value = '';
+                document.getElementById('adminPasswordInput').focus();
+            }
+        }
+
+        window.openDataModal = function() {
+            document.getElementById('dataModal').classList.remove('hidden');
+            renderManagementLists();
+        }
+        window.closeDataModal = function() {
+            document.getElementById('dataModal').classList.add('hidden');
+        }
+
+        window.addNewMember = function(e) {
+            e.preventDefault();
+            const house = document.getElementById('targetHouse').value;
+            const name = document.getElementById('newMemberName').value.trim();
+            if (!name) return;
+
+            push(ref(db, `members/${house}`), { name: name }).then(() => {
+                document.getElementById('newMemberName').value = '';
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มสมาชิกเรียบร้อย', showConfirmButton: false, timer: 1500, background: '#131c31', color: '#f8fafc' });
+            });
+        }
+
+        window.deleteMember = function(house, memberId) {
+            remove(ref(db, `members/${house}/${memberId}`)).then(() => {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ลบสมาชิกออกแล้ว', showConfirmButton: false, timer: 1500, background: '#131c31', color: '#f8fafc' });
+            });
+        }
+
+        window.addNewReason = function(e) {
+            e.preventDefault();
+            const text = document.getElementById('newReasonText').value.trim();
+            if (!text) return;
+
+            push(ref(db, `reasons`), { text: text }).then(() => {
+                document.getElementById('newReasonText').value = '';
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มหัวข้อข้อหาเรียบร้อย', showConfirmButton: false, timer: 1500, background: '#131c31', color: '#f8fafc' });
+            });
+        }
+
+        window.deleteReason = function(reasonId) {
+            remove(ref(db, `reasons/${reasonId}`)).then(() => {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ลบหัวข้อข้อหาแล้ว', showConfirmButton: false, timer: 1500, background: '#131c31', color: '#f8fafc' });
+            });
+        }
+
+        function renderManagementLists() {
+            const memberListEl = document.getElementById('memberManagementList');
+            memberListEl.innerHTML = '';
+            let hasMember = false;
+            Object.keys(globalMembersData).forEach(house => {
+                const members = globalMembersData[house];
+                Object.keys(members).forEach(memberId => {
+                    hasMember = true;
+                    memberListEl.innerHTML += `
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex justify-between items-center text-xs">
+                            <div><span class="text-pink-400 font-bold mr-2">[${house}]</span><span class="text-slate-200">${members[memberId].name}</span></div>
+                            <button onclick="deleteMember('${house}', '${memberId}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    `;
+                });
+            });
+            if (!hasMember) memberListEl.innerHTML = '<div class="text-center py-3 text-slate-500 text-xs">ยังไม่มีสมาชิกในระบบ</div>';
+
+            const reasonListEl = document.getElementById('reasonManagementList');
+            reasonListEl.innerHTML = '';
+            let hasReason = false;
+            Object.keys(globalReasonsData).forEach(reasonId => {
+                hasReason = true;
+                reasonListEl.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex justify-between items-center text-xs">
+                        <span class="text-slate-200">${globalReasonsData[reasonId].text}</span>
+                        <button onclick="deleteReason('${reasonId}')" class="text-red-400 hover:text-red-300 p-1.5"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                `;
+            });
+            if (!hasReason) reasonListEl.innerHTML = '<div class="text-center py-3 text-slate-500 text-xs">ยังไม่มีหัวข้อข้อหาในระบบ</div>';
+        }
+
+        // 🟢 ฟังก์ชันสลับสถานะ จ่ายแล้ว / ยังไม่จ่าย (ทุกคนกดคลิกได้ทันที)
+        window.toggleStatus = function(id, currentStatus) {
+            const newStatus = currentStatus === "จ่ายแล้ว" ? "ยังไม่จ่าย" : "จ่ายแล้ว";
+            update(ref(db, 'fines/' + id), { status: newStatus }).then(() => {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `เปลี่ยนสถานะเป็น "${newStatus}" แล้ว`, showConfirmButton: false, timer: 1200, background: '#131c31', color: '#f8fafc' });
+            });
+        }
+
+        window.editFine = async function(id, currentName, currentReason, currentAmount) {
+            if (!isAdmin) return;
+
+            const { value: formValues } = await Swal.fire({
+                title: 'แก้ไขรายการค่าปรับ',
+                html: `
+                    <div class="text-left space-y-3 mt-3">
+                        <div>
+                            <label class="text-xs text-slate-300 mb-1 block">ชื่อสมาชิก</label>
+                            <input id="swal-input-name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-pink-500" value="${currentName}">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-300 mb-1 block">เหตุผล / ข้อหา</label>
+                            <input id="swal-input-reason" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-pink-500" value="${currentReason}">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-300 mb-1 block">จำนวนเงิน ($)</label>
+                            <input id="swal-input-amount" type="number" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-pink-500" value="${currentAmount}">
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'บันทึกการแก้ไข',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#ec4899',
+                cancelButtonColor: '#334155',
+                background: '#131c31',
+                color: '#f8fafc',
+                preConfirm: () => {
+                    return {
+                        name: document.getElementById('swal-input-name').value.trim(),
+                        reason: document.getElementById('swal-input-reason').value.trim(),
+                        amount: Number(document.getElementById('swal-input-amount').value)
+                    }
+                }
+            });
+
+            if (formValues) {
+                if (!formValues.name || !formValues.reason || isNaN(formValues.amount)) {
+                    Swal.fire({ icon: 'error', title: 'กรุณากรอกข้อมูลให้ครบถ้วนถูกต้อง', background: '#131c31', color: '#f8fafc' });
+                    return;
+                }
+
+                update(ref(db, 'fines/' + id), {
+                    name: formValues.name,
+                    reason: formValues.reason,
+                    amount: formValues.amount
+                }).then(() => {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'แก้ไขข้อมูลสำเร็จ', showConfirmButton: false, timer: 1500, background: '#131c31', color: '#f8fafc' });
+                });
+            }
+        }
+
+        window.deleteFine = function(id) {
+            if (!isAdmin) return;
+            Swal.fire({
+                title: 'คุณแน่ใจหรือไม่?', text: "ต้องการลบรายการค่าปรับนี้", icon: 'warning', showCancelButton: true,
+                confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'ใช่, ลบเลย', cancelButtonText: 'ยกเลิก',
+                background: '#131c31', color: '#f8fafc'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    remove(ref(db, 'fines/' + id)).then(() => {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ลบรายการสำเร็จ', showConfirmButton: false, timer: 1500, background: '#131c31', color: '#f8fafc' });
+                    });
+                }
+            });
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const house = document.querySelector('input[name="house"]:checked').value;
+            const name = document.getElementById('characterSelect').value;
+            
+            const customReason = document.getElementById('customReasonInput').value.trim();
+            const dropdownReason = document.getElementById('reasonSelect').value;
+            const reason = customReason !== "" ? customReason : dropdownReason;
+
+            const amount = Number(document.getElementById('amount').value);
+            const status = document.querySelector('input[name="status"]:checked').value;
+
+            if (!name || !reason) {
+                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกชื่อสมาชิกและระบุข้อหาให้ครบถ้วน', background: '#131c31', color: '#f8fafc' });
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-2"></i>กำลังบันทึก...';
+
+            push(ref(db, 'fines'), {
+                house: house, name: name, reason: reason, amount: amount, status: status, timestamp: serverTimestamp()
+            }).then(() => {
+                form.reset();
+                charChoices.setChoiceByValue('');
+                reasonChoices.setChoiceByValue('');
+                updateMemberDropdown();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>บันทึกค่าปรับ';
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'บันทึกค่าปรับเรียบร้อย!', showConfirmButton: false, timer: 2000, background: '#131c31', color: '#f8fafc' });
+            }).catch((error) => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>บันทึกค่าปรับ';
+                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: error.message, background: '#131c31', color: '#f8fafc' });
+            });
+        });
+
+        function triggerRealtimeLoad() {
+            if (!latestSnapshot) return;
+            
+            loadingStatus.textContent = 'ซิงค์ข้อมูลล่าสุดแล้ว';
+            historyList.innerHTML = '';
+
+            let totals = { "บ้านที่ 1": 0, "บ้านที่ 2": 0, "บ้านที่ 3": 0, "บ้านที่ 4": 0 };
+            let items = [];
+
+            latestSnapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                items.push({ id: childSnapshot.key, ...data });
+                if (totals[data.house] !== undefined) {
+                    totals[data.house] += Number(data.amount) || 0;
+                }
+            });
+
+            document.getElementById('totalHouse1').textContent = `$${totals["บ้านที่ 1"].toLocaleString()}`;
+            document.getElementById('totalHouse2').textContent = `$${totals["บ้านที่ 2"].toLocaleString()}`;
+            document.getElementById('totalHouse3').textContent = `$${totals["บ้านที่ 3"].toLocaleString()}`;
+            document.getElementById('totalHouse4').textContent = `$${totals["บ้านที่ 4"].toLocaleString()}`;
+
+            if (items.length === 0) {
+                historyList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">ยังไม่มีข้อมูลค่าปรับในระบบ</div>';
+                return;
+            }
+
+            items.reverse();
+
+            items.forEach((item) => {
+                const houseShort = item.house.replace('บ้านที่ ', 'B');
+                const formattedAmount = Number(item.amount).toLocaleString();
+                const status = item.status || "ยังไม่จ่าย";
+
+                const statusBadgeClass = status === "จ่ายแล้ว" 
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20" 
+                    : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20";
+
+                // 🟢 ปลดล็อกให้ทุกคนคลิกปุ่มสถานะเพื่อสลับ จ่ายแล้ว / ยังไม่จ่าย ได้เลย
+                const statusBadge = `
+                    <span onclick="toggleStatus('${item.id}', '${status}')" title="คลิกเพื่อเปลี่ยนสถานะ" class="px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all shadow-sm cursor-pointer ${statusBadgeClass}">
+                        <i class="fa-solid ${status === 'จ่ายแล้ว' ? 'fa-circle-check' : 'fa-circle-exclamation'} mr-1.5"></i>${status}
+                    </span>
+                `;
+
+                const adminButtonsHTML = isAdmin ? `
+                    <div class="flex items-center space-x-1.5 ml-2">
+                        <button onclick="editFine('${item.id}', '${item.name}', '${item.reason.replace(/'/g, "\\'")}', ${item.amount})" class="p-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all shadow" title="แก้ไขรายการนี้">
+                            <i class="fa-solid fa-pen text-xs"></i>
+                        </button>
+                        <button onclick="deleteFine('${item.id}')" class="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all shadow" title="ลบรายการนี้">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                ` : '';
+
+                historyList.innerHTML += `
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex items-center justify-between text-sm hover:border-slate-700 transition-all shadow-sm">
+                        <div class="flex items-center space-x-3.5 overflow-hidden">
+                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500/20 to-purple-500/20 border border-pink-500/30 flex items-center justify-center text-pink-400 font-bold text-xs shrink-0 shadow-inner">${houseShort}</div>
+                            <div class="truncate">
+                                <h4 class="font-semibold text-slate-100 text-sm truncate">${item.house} - ${item.name}</h4>
+                                <p class="text-slate-400 text-xs truncate mt-0.5">เหตุผล: ${item.reason}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4 shrink-0">
+                            <span class="text-amber-400 font-bold text-base">$${formattedAmount}</span>
+                            ${statusBadge}
+                            ${adminButtonsHTML}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        onValue(ref(db, 'fines'), (snapshot) => {
+            latestSnapshot = snapshot;
+            triggerRealtimeLoad();
+        });
+
+        onValue(ref(db, 'members'), (snapshot) => {
+            globalMembersData = snapshot.val() || {};
+            updateMemberDropdown();
+            if(!document.getElementById('dataModal').classList.contains('hidden')) {
+                renderManagementLists();
+            }
+        });
+
+        onValue(ref(db, 'reasons'), (snapshot) => {
+            globalReasonsData = snapshot.val() || {};
+            updateReasonDropdown();
+            if(!document.getElementById('dataModal').classList.contains('hidden')) {
+                renderManagementLists();
+            }
+        });
+    </script>
+</body>
+</html>
